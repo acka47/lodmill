@@ -42,7 +42,6 @@
    "afterWordBy": "http://id.loc.gov/vocabulary/relators/aft",
    "introductionBy": "http://id.loc.gov/vocabulary/relators/aui",
    "screenwriter": "http://id.loc.gov/vocabulary/relators/aus",
-   "collaborator": "http://id.loc.gov/vocabulary/relators/clb",
    "composer": "http://id.loc.gov/vocabulary/relators/cmp",
    "conductor": "http://id.loc.gov/vocabulary/relators/cnd",
    "cinematographer": "http://id.loc.gov/vocabulary/relators/cng",
@@ -59,7 +58,7 @@
    "photographer": "http://id.loc.gov/vocabulary/relators/pht",
    "performer": "http://id.loc.gov/vocabulary/relators/prf",
    "producer": "http://id.loc.gov/vocabulary/relators/pro",
-   "vocalist": "http://id.loc.gov/vocabulary/relators/voc",
+   "singer": "http://id.loc.gov/vocabulary/relators/sng",
    "publicationStatement": {
       "@id": "http://rdvocab.info/Elements/publicationStatement",
       "@type": "xsd:string"
