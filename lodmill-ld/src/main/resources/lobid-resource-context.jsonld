@@ -1,6 +1,8 @@
 {
   "@context":
   {
+    "bibo": "http://purl.org/ontology/bibo/",
+    "iso639-2": "http://id.loc.gov/vocabulary/iso639-2/",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "title": {
       "@id": "http://purl.org/dc/elements/1.1/title",
