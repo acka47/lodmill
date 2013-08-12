@@ -3,6 +3,8 @@
   {
     "bibo": "http://purl.org/ontology/bibo/",
     "iso639-2": "http://id.loc.gov/vocabulary/iso639-2/",
+    "dct": "http://purl.org/dc/terms/",
+    "frbr": "http://purl.org/vocab/frbr/core#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "title": {
       "@id": "http://purl.org/dc/elements/1.1/title",
