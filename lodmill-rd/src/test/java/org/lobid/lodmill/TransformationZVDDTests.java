@@ -2,8 +2,8 @@
 
 package org.lobid.lodmill;
 
-import org.culturegraph.metamorph.test.TestSuite;
-import org.culturegraph.metamorph.test.TestSuite.TestDefinitions;
+import org.culturegraph.mf.test.TestSuite;
+import org.culturegraph.mf.test.TestSuite.TestDefinitions;
 import org.junit.runner.RunWith;
 
 /**
@@ -11,6 +11,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(TestSuite.class)
 @TestDefinitions({ "TransformationZvdd-title-print.xml",
-		"TransformationZvdd-title-digital.xml" })
+		"TransformationZvdd-title-digital.xml", "TransformationZvdd-collection.xml" })
 public final class TransformationZVDDTests {
+	/* Suite class, groups tests via annotation above */
 }

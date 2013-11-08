@@ -1,13 +1,14 @@
-/* Copyright 2012 Fabian Steeg. Licensed under the Eclipse Public License 1.0 */
+/* Copyright 2012-2013 Fabian Steeg. Licensed under the Eclipse Public License 1.0 */
 
 package org.lobid.lodmill;
 
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
-import org.lobid.lodmill.hadoop.GndNTriplesToJsonLdTests;
-import org.lobid.lodmill.hadoop.JsonLdConverterTests;
-import org.lobid.lodmill.hadoop.LobidNTriplesToJsonLdTests;
-import org.lobid.lodmill.hadoop.ResolveObjectUrisInLobidNTriplesTests;
+import org.lobid.lodmill.hadoop.UnitTestGndNTriplesToJsonLd;
+import org.lobid.lodmill.hadoop.UnitTestJsonLdConverter;
+import org.lobid.lodmill.hadoop.UnitTestJsonLdConverterWithBlankNodes;
+import org.lobid.lodmill.hadoop.UnitTestLobidNTriplesToJsonLd;
+import org.lobid.lodmill.hadoop.UnitTestCollectSubjects;
 
 /**
  * Main test suite for all unit tests.
@@ -15,8 +16,10 @@ import org.lobid.lodmill.hadoop.ResolveObjectUrisInLobidNTriplesTests;
  * @author Fabian Steeg (fsteeg)
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ LobidNTriplesToJsonLdTests.class,
-		GndNTriplesToJsonLdTests.class,
-		ResolveObjectUrisInLobidNTriplesTests.class, JsonLdConverterTests.class })
+@Suite.SuiteClasses({ UnitTestLobidNTriplesToJsonLd.class,
+		UnitTestGndNTriplesToJsonLd.class,
+		UnitTestCollectSubjects.class,
+		UnitTestJsonLdConverter.class, UnitTestJsonLdConverterWithBlankNodes.class })
 public final class UnitTests {
+	/* Suite class, groups tests via annotation above */
 }

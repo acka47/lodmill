@@ -1,6 +1,6 @@
 import sbt._
 import Keys._
-import PlayProject._
+import play.Project._
 
 object ApplicationBuild extends Build {
 
@@ -8,11 +8,14 @@ object ApplicationBuild extends Build {
     val appVersion      = "0.1.0-SNAPSHOT"
     
     val appDependencies = Seq(
-      "org.elasticsearch" % "elasticsearch" % "0.19.11" withSources(),
-      "org.lobid" % "lodmill-ld" % "0.1.0-SNAPSHOT"
+      javaCore,
+      "org.elasticsearch" % "elasticsearch" % "0.90.5" withSources(),
+      "org.lobid" % "lodmill-ld" % "0.2.1-SNAPSHOT",
+      "org.scalatest" %% "scalatest" % "1.9.1" % "test"
     )
 
-    val main = PlayProject(appName, appVersion, appDependencies, mainLang = JAVA).settings(
+    val main = play.Project(appName, appVersion, appDependencies).settings(
+      parallelExecution in Test := false,
       resolvers := Seq("codehaus" at "http://repository.codehaus.org/org/codehaus", "typesafe" at "http://repo.typesafe.com/typesafe/repo", Resolver.mavenLocal)
     )
 	

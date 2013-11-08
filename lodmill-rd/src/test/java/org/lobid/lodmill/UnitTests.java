@@ -11,7 +11,11 @@ import org.junit.runners.Suite;
  * @author Fabian Steeg (fsteeg)
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ GndTests.class, LobidTests.class,
-		TransformationZVDDTests.class })
+@Suite.SuiteClasses({ TransformationZVDDTests.class,
+		LobidOrganisationEnrichmentTest.class, ZvddMarcIngestTest.class,
+		GeonamesCsvTest.class, OaiDcFlowTest.class, DippQdcToLobidTest.class,
+		XmlEntitySplitterTest.class, LobidOrganisationsUpdateTest.class,
+		GndXmlSplitterRdfWriterTest.class, MabXml2lobidTest.class })
 public final class UnitTests {
+	/* Suite class, groups tests via annotation above */
 }

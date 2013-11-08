@@ -1,4 +1,4 @@
-/* Copyright 2012 Fabian Steeg. Licensed under the Eclipse Public License 1.0 */
+/* Copyright 2012-2013 Fabian Steeg. Licensed under the Eclipse Public License 1.0 */
 
 package org.lobid.lodmill.hadoop;
 
@@ -48,7 +48,12 @@ public class IndexFromHdfsInElasticSearch {
 	private final FileSystem hdfs;
 	private final Client client;
 
-	public static void main(final String[] args) throws IOException {
+	/**
+	 * @param args Pass 4 params: hdfs-server hdfs-input-path es-host
+	 *          es-cluster-name to index files in hdfs-input-path from HDFS on
+	 *          hdfs-server into es-cluster-name on es-host.
+	 */
+	public static void main(final String[] args) {
 		if (args.length != 4) {
 			System.err.println("Pass 4 params: <hdfs-server> <hdfs-input-path>"
 					+ " <es-host> <es-cluster-name> to index files in"
@@ -56,28 +61,28 @@ public class IndexFromHdfsInElasticSearch {
 					+ " <es-cluster-name> on <es-host>.");
 			System.exit(-1);
 		}
-		final FileSystem hdfs =
-				FileSystem.get(URI.create(args[0]), new Configuration());
-		final Client client =
-				new TransportClient(ImmutableSettings
-						.settingsBuilder()
-						.put("cluster.name", args[3])
-						.put("client.transport.sniff", false)
-						.put("client.transport.ping_timeout", 20,
-								TimeUnit.SECONDS).build())
-						.addTransportAddress(new InetSocketTransportAddress(
-								args[2], 9300));
-		final IndexFromHdfsInElasticSearch indexer =
-				new IndexFromHdfsInElasticSearch(hdfs, client);
-		indexer.indexAll(args[1].endsWith("/") ? args[1] : args[1] + "/");
+		try (FileSystem hdfs =
+				FileSystem.get(URI.create(args[0]), new Configuration())) {
+			final Client client =
+					new TransportClient(ImmutableSettings.settingsBuilder()
+							.put("cluster.name", args[3])
+							.put("client.transport.sniff", false)
+							.put("client.transport.ping_timeout", 20, TimeUnit.SECONDS)
+							.build()).addTransportAddress(new InetSocketTransportAddress(
+							args[2], 9300));
+			final IndexFromHdfsInElasticSearch indexer =
+					new IndexFromHdfsInElasticSearch(hdfs, client);
+			indexer.indexAll(args[1].endsWith("/") ? args[1] : args[1] + "/");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
 	 * @param hdfs The HDFS to index from
 	 * @param client The ElasticSearch client for indexing
 	 */
-	public IndexFromHdfsInElasticSearch(final FileSystem hdfs,
-			final Client client) {
+	public IndexFromHdfsInElasticSearch(final FileSystem hdfs, final Client client) {
 		this.hdfs = hdfs;
 		this.client = client;
 	}
@@ -109,33 +114,38 @@ public class IndexFromHdfsInElasticSearch {
 	 * @return A list of responses for requests that failed
 	 * @throws IOException When HDFS operations fail
 	 */
-	public List<BulkItemResponse> indexOne(final String data)
-			throws IOException {
+	public List<BulkItemResponse> indexOne(final String data) throws IOException {
 		checkPathInHdfs(data);
 		final FSDataInputStream inputStream = hdfs.open(new Path(data));
-		final Scanner scanner = new Scanner(inputStream, "UTF-8");
-		final List<BulkItemResponse> result = runBulkRequests(scanner);
-		scanner.close();
-		return result;
+		try (Scanner scanner = new Scanner(inputStream, "UTF-8")) {
+			final List<BulkItemResponse> result = runBulkRequests(scanner, client);
+			return result;
+		}
 	}
 
-	private List<BulkItemResponse> runBulkRequests(final Scanner scanner) {
+	/**
+	 * @param scanner The scanner for reading the data to index
+	 * @param c The elasticsearch client to use for indexing
+	 * @return A list responses for requests that errored
+	 */
+	public static List<BulkItemResponse> runBulkRequests(final Scanner scanner,
+			Client c) {
 		final List<BulkItemResponse> result = new ArrayList<>();
 		int lineNumber = 0;
 		String meta = null;
-		BulkRequestBuilder bulkRequest = client.prepareBulk();
+		BulkRequestBuilder bulkRequest = c.prepareBulk();
 		while (scanner.hasNextLine()) {
 			final String line = scanner.nextLine();
 			if (lineNumber % 2 == 0) { // every first line is index info
 				meta = line;
 			} else { // every second line is value object
-				addIndexRequest(meta, bulkRequest, line);
+				addIndexRequest(meta, bulkRequest, line, c);
 			}
 			lineNumber++;
 			/* Split into multiple bulks to ease server load: */
 			if (lineNumber % BULK_SIZE == 0) {
 				runBulkRequest(bulkRequest, result);
-				bulkRequest = client.prepareBulk();
+				bulkRequest = c.prepareBulk();
 			}
 		}
 		/* Run the final bulk, if there is anything to do: */
@@ -145,21 +155,22 @@ public class IndexFromHdfsInElasticSearch {
 		return result;
 	}
 
-	private void addIndexRequest(final String meta,
-			final BulkRequestBuilder bulkRequest, final String line) {
+	private static void addIndexRequest(final String meta,
+			final BulkRequestBuilder bulkRequest, final String line, Client c) {
 		try {
-			@SuppressWarnings("unchecked")
 			final Map<String, Object> map =
 					(Map<String, Object>) JSONValue.parseWithException(line);
 			final IndexRequestBuilder requestBuilder =
-					createRequestBuilder(meta, map);
+					createRequestBuilder(meta, map, c);
 			bulkRequest.add(requestBuilder);
 		} catch (ParseException e) {
-			LOG.error(e.getMessage(), e);
+			LOG.error(String.format(
+					"ParseException with meta '%s' and line '%s': '%s'", meta, line,
+					e.getMessage()), e);
 		}
 	}
 
-	private void runBulkRequest(final BulkRequestBuilder bulkRequest,
+	private static void runBulkRequest(final BulkRequestBuilder bulkRequest,
 			final List<BulkItemResponse> result) {
 		final BulkResponse bulkResponse = executeBulkRequest(bulkRequest);
 		if (bulkResponse == null) {
@@ -169,45 +180,48 @@ public class IndexFromHdfsInElasticSearch {
 		}
 	}
 
-	private void collectFailedResponses(final List<BulkItemResponse> result,
-			final BulkResponse bulkResponse) {
-		for (BulkItemResponse bulkItemResponse : bulkResponse) {
-			if (bulkItemResponse.failed()) {
-				LOG.error(bulkItemResponse.failureMessage());
-				result.add(bulkItemResponse);
+	private static void collectFailedResponses(
+			final List<BulkItemResponse> result, final BulkResponse bulkResponse) {
+		for (BulkItemResponse response : bulkResponse) {
+			if (response.isFailed()) {
+				LOG.error(String.format(
+						"Bulk item response failed for index '%s', ID '%s', message: %s",
+						response.getIndex(), response.getId(), response.getFailureMessage()));
+				result.add(response);
 			}
 		}
 	}
 
-	private IndexRequestBuilder createRequestBuilder(final String meta,
-			final Map<String, Object> map) {
+	private static IndexRequestBuilder createRequestBuilder(final String meta,
+			final Map<String, Object> map, Client c) {
 		final JSONObject object =
 				(JSONObject) ((JSONObject) JSONValue.parse(meta)).get("index");
 		final String index = (String) object.get("_index");
 		final String type = (String) object.get("_type");
 		final String id = (String) object.get("_id"); // NOPMD
-		final IndicesAdminClient admin = client.admin().indices();
-		if (!admin.prepareExists(index).execute().actionGet().exists()) {
-			admin.prepareCreate(index).setSource(config()).execute()
-					.actionGet();
+		final IndicesAdminClient admin = c.admin().indices();
+		if (!admin.prepareExists(index).execute().actionGet().isExists()) {
+			admin.prepareCreate(index).setSource(config()).execute().actionGet();
 		}
-		return client.prepareIndex(index, type, id).setSource(map);
+		return c.prepareIndex(index, type, id).setSource(map);
 	}
 
-	private String config() {
+	private static String config() {
 		String res = null;
 		try {
 			final InputStream config =
 					Thread.currentThread().getContextClassLoader()
 							.getResourceAsStream("index-config.json");
-			res = CharStreams.toString(new InputStreamReader(config, "UTF-8"));
+			try (InputStreamReader reader = new InputStreamReader(config, "UTF-8")) {
+				res = CharStreams.toString(reader);
+			}
 		} catch (IOException e) {
 			LOG.error(e.getMessage(), e);
 		}
 		return res;
 	}
 
-	private BulkResponse executeBulkRequest(final BulkRequestBuilder bulk) {
+	private static BulkResponse executeBulkRequest(final BulkRequestBuilder bulk) {
 		BulkResponse bulkResponse = null;
 		int retries = 40;
 		while (retries > 0) {
@@ -223,9 +237,9 @@ public class IndexFromHdfsInElasticSearch {
 				} catch (InterruptedException x) {
 					LOG.error(x.getMessage(), x);
 				}
-				LOG.error(String
-						.format("Retry bulk index request after exception: %s (%s more retries)",
-								e.getMessage(), retries));
+				LOG.error(String.format(
+						"Retry bulk index request after exception: %s (%s more retries)",
+						e.getMessage(), retries));
 			}
 		}
 		return bulkResponse;

@@ -5,10 +5,10 @@ package org.lobid.lodmill;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.culturegraph.metastream.annotation.Description;
-import org.culturegraph.metastream.annotation.In;
-import org.culturegraph.metastream.annotation.Out;
-import org.culturegraph.metastream.framework.StreamReceiver;
+import org.culturegraph.mf.framework.StreamReceiver;
+import org.culturegraph.mf.framework.annotations.Description;
+import org.culturegraph.mf.framework.annotations.In;
+import org.culturegraph.mf.framework.annotations.Out;
 
 /**
  * @author Fabian Steeg
@@ -37,8 +37,8 @@ public final class PipeEncodeDot extends AbstractGraphPipeEncoder {
 	@Override
 	public void startRecord(final String identifier) {
 		this.subject = null;
-		predicates = new ArrayList<>();
-		objects = new ArrayList<>();
+		predicates = new ArrayList<String>();
+		objects = new ArrayList<String>();
 	}
 
 	@Override
@@ -55,10 +55,15 @@ public final class PipeEncodeDot extends AbstractGraphPipeEncoder {
 	public void endRecord() {
 		for (int i = 0; i < predicates.size(); i++) {
 			String object = objects.get(i);
-			object = object.charAt(0) == '"' ? object : "\"" + object + "\"";
+			object = object.charAt(0) == '"' ? object : "\"" + object + "\""; // NOPMD
 			getReceiver().process(
-					String.format("\t\"<%s>\" -> %s [label=\"%s\"]", subject,
-							object, predicates.get(i)));
+					String.format("\t\"<%s>\" -> %s [label=\"%s\"]", subject, object,
+							predicates.get(i)));
 		}
 	}
+
+	private static String uriOrLiteral(final String value) {
+		return isUriWithScheme(value) ? "<" + value + ">" : "\"" + value + "\"";
+	}
+
 }

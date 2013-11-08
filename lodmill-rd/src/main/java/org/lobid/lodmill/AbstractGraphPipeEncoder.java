@@ -6,13 +6,12 @@ package org.lobid.lodmill;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-import org.culturegraph.metastream.annotation.Description;
-import org.culturegraph.metastream.annotation.In;
-import org.culturegraph.metastream.annotation.Out;
-import org.culturegraph.metastream.converter.Encoder;
-import org.culturegraph.metastream.framework.DefaultStreamPipe;
-import org.culturegraph.metastream.framework.ObjectReceiver;
-import org.culturegraph.metastream.framework.StreamReceiver;
+import org.culturegraph.mf.framework.DefaultStreamPipe;
+import org.culturegraph.mf.framework.ObjectReceiver;
+import org.culturegraph.mf.framework.StreamReceiver;
+import org.culturegraph.mf.framework.annotations.Description;
+import org.culturegraph.mf.framework.annotations.In;
+import org.culturegraph.mf.framework.annotations.Out;
 
 /**
  * @author Fabian Steeg, Pascal Christoph
@@ -21,22 +20,24 @@ import org.culturegraph.metastream.framework.StreamReceiver;
 @In(StreamReceiver.class)
 @Out(String.class)
 public abstract class AbstractGraphPipeEncoder extends
-		DefaultStreamPipe<ObjectReceiver<String>> implements Encoder {
+		DefaultStreamPipe<ObjectReceiver<String>> {
 
-	static final String SUBJECT_NAME = "subject";
+	static final String SUBJECT_NAME = "~rdf:subject";
 	String subject;
 
-	String uriOrLiteral(final String value) {
-		return isUriWithScheme(value) ? "<" + value + ">" : "\"" + value + "\"";
-	}
-
-	private boolean isUriWithScheme(final String value) {
+	/**
+	 * @param value The string which is checked.
+	 * @return True if string is a URI with a scheme.
+	 */
+	protected static boolean isUriWithScheme(final String value) {
+		if (value == null) {
+			return false;
+		}
 		try {
 			final URI uri = new URI(value);
 			/*
-			 * collection:example.org" is a valid URI, though no URL, and
-			 * " 1483-1733" is also a valid (java-)URI, but not for us - a
-			 * "scheme" is mandatory.
+			 * collection:example.org" is a valid URI, though no URL, and " 1483-1733"
+			 * is also a valid (java-)URI, but not for us - a "scheme" is mandatory.
 			 */
 			if (uri.getScheme() == null) {
 				return false;
