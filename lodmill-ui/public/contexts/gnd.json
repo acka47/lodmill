@@ -1,7 +1,5 @@
 {
     "gnd": "http://d-nb.info/standards/elementset/gnd#",
-    "Literal": "rdfs:Literal",
-    "dateTime": "xsd:dateTime",
     "academicDegree": {
         "@id": "gnd:academicDegree",
         "@type": "@id"
